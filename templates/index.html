@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Consulta Múltiple</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f3f3f3;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      padding: 10px;
+      font-size: 16px;
+      width: 90%;
+      max-width: 500px;
+      height: 120px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: vertical;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 600px;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .activo {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .inactivo {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .warning {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .gris {
+      background-color: #e2e3e5;
+      color: #383d41;
+    }
+  </style>
+  <script>
+    async function consultar() {
+      const input = document.getElementById("billingIds").value;
+      const lista = input.split(/[\n,]+/).map(id => id.trim()).filter(id => id);
+
+      const tableBody = document.getElementById("resultadoBody");
+      tableBody.innerHTML = "<tr><td colspan='3'>Consultando...</td></tr>";
+
+      const res = await fetch("/consultar_lote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ billing_ids: lista })
+      });
+
+      const data = await res.json();
+      tableBody.innerHTML = "";
+
+      for (const item of data.resultados) {
+        const tr = document.createElement("tr");
+        let clase = "gris";
+
+        if (item.estado.includes("responde")) {
+          clase = item.estado === "El equipo responde" ? "activo" : "inactivo";
+        } else if (item.estado === "sin equipo" || item.estado === "cliente no encontrado") {
+          clase = "warning";
+        }
+
+        tr.className = clase;
+        tr.innerHTML = `<td>${item.id}</td><td>${item.estado}</td><td>${item.rx}</td>`;
+        tableBody.appendChild(tr);
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Consulta de Múltiples Clientes</h1>
+  <textarea id="billingIds" placeholder="Pegá uno por línea o separados por coma"></textarea>
+  <br />
+  <button onclick="consultar()">Consultar</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Billing ID</th>
+        <th>Estado</th>
+        <th>RX</th>
+      </tr>
+    </thead>
+    <tbody id="resultadoBody">
+      <tr><td colspan="3">Esperando consulta...</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>
